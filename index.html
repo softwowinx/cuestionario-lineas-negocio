@@ -244,6 +244,32 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+  /* ---------- Botón discreto de borrado ---------- */
+  .linea-reset-row{display:flex;justify-content:center;margin-top:14px}
+  .btn-quiet{
+    font-family:var(--sans);font-size:.82rem;font-weight:500;letter-spacing:.02em;
+    color:var(--ink-soft);background:none;border:none;cursor:pointer;
+    padding:8px 12px;border-radius:8px;transition:color .15s, background .15s;
+  }
+  .btn-quiet:hover{color:#b4462f;background:rgba(180,70,47,.06)}
+
+  /* ---------- Modal de confirmación ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;z-index:60;display:none;
+    align-items:center;justify-content:center;padding:20px;
+    background:rgba(28,27,25,.45);backdrop-filter:blur(2px);
+  }
+  .modal-overlay.show{display:flex;animation:fade .18s ease}
+  .modal{
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    max-width:380px;width:100%;padding:26px 24px;
+    box-shadow:0 20px 60px rgba(28,27,25,.28);
+  }
+  .modal-title{font-family:var(--serif);font-weight:600;font-size:1.55rem;margin:0 0 8px;line-height:1.15}
+  .modal-body{color:var(--ink-soft);font-size:1rem;line-height:1.5;margin:0 0 22px}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+  .modal-actions .btn{min-width:104px;justify-content:center;text-align:center}
+
   @media (max-width:520px){
     header.bar{padding:10px 14px}
     main{padding:22px 14px 80px}
@@ -298,6 +324,9 @@
       <button class="btn btn-ghost" id="linea-back">← Volver al inicio</button>
       <button class="btn btn-primary" id="linea-resumen">Ver resumen →</button>
     </div>
+    <div class="linea-reset-row">
+      <button class="btn-quiet" id="reset-linea">Reiniciar esta línea</button>
+    </div>
   </section>
 
   <!-- ============ RESUMEN ============ -->
@@ -312,12 +341,23 @@
     <div id="resumen-content"></div>
     <div class="linea-foot">
       <button class="btn btn-ghost" id="resumen-back">← Volver al inicio</button>
-      <button class="btn btn-ghost" id="reset-all" style="color:#a35;">Empezar de cero</button>
+      <button class="btn-quiet" id="reset-all">Borrar todo</button>
     </div>
   </section>
 </main>
 
 <div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h2 class="modal-title" id="modal-title"></h2>
+    <p class="modal-body" id="modal-body"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="modal-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="modal-ok">Sí, borrar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* =========================================================================
@@ -640,10 +680,13 @@ function loadState(){
 function saveState(){
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e){}
 }
-function ansFor(lid, qid){
+function ansFor(lid, qid){            // crea la rama al ESCRIBIR (responder)
   if(!state[lid]) state[lid] = {};
   if(!state[lid][qid]) state[lid][qid] = {};
   return state[lid][qid];
+}
+function readAns(lid, qid){           // LEE sin crear ramas (para pintar)
+  return (state[lid] && state[lid][qid]) || {};
 }
 function isAnswered(q, a){
   if(!a) return false;
@@ -733,7 +776,7 @@ function renderPreguntas(){
 }
 
 function renderPregunta(lid, q, num){
-  const a = ansFor(lid, q.id);
+  const a = readAns(lid, q.id);
   const answered = isAnswered(q, a) ? 'answered' : '';
   let body = '';
 
@@ -778,7 +821,7 @@ function renderPregunta(lid, q, num){
 }
 
 function renderOrdenItems(lid, q){
-  const a = ansFor(lid, q.id);
+  const a = readAns(lid, q.id);
   const order = a.order || q.opciones.map((_, i) => i); // orden natural por defecto
   return order.map((optIdx, pos) => `
     <li class="orden-item" data-pos="${pos}">
@@ -1025,14 +1068,67 @@ $('#nav-resumen').addEventListener('click', renderResumen);
 $('#home-resumen').addEventListener('click', renderResumen);
 $('#linea-resumen').addEventListener('click', renderResumen);
 $('#send-answers').addEventListener('click', sendAnswers);
-$('#reset-all').addEventListener('click', () => {
-  if(confirm('¿Borrar TODAS las respuestas y empezar de cero? Esto no se puede deshacer.')){
-    state = {};
-    saveState();
-    toast('Todo borrado');
-    renderHome();
-  }
+
+/* ---------- Modal de confirmación (reutilizable) ---------- */
+let _modalCb = null;
+function confirmModal(titulo, mensaje, confirmLabel, onOK){
+  $('#modal-title').textContent = titulo;
+  $('#modal-body').textContent = mensaje;
+  $('#modal-ok').textContent = confirmLabel || 'Sí, borrar';
+  _modalCb = onOK;
+  $('#modal-overlay').classList.add('show');
+}
+function closeModal(){
+  $('#modal-overlay').classList.remove('show');
+  _modalCb = null;
+}
+$('#modal-cancel').addEventListener('click', closeModal);
+$('#modal-ok').addEventListener('click', () => {
+  const cb = _modalCb;
+  closeModal();
+  if(cb) cb();
 });
+$('#modal-overlay').addEventListener('click', (e) => {
+  if(e.target === $('#modal-overlay')) closeModal();   // clic fuera = cancelar
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && $('#modal-overlay').classList.contains('show')) closeModal();
+});
+
+/* ---------- Reiniciar SOLO la línea actual ---------- */
+function resetLinea(){
+  const l = currentLinea;
+  if(!l) return;
+  confirmModal(
+    'Reiniciar ' + l.nombre,
+    'Se borrarán únicamente las respuestas de esta línea. Las otras dos no se tocan. Esto no se puede deshacer.',
+    'Sí, reiniciar',
+    () => {
+      delete state[l.id];          // borra SOLO esta línea
+      saveState();                 // persiste al instante
+      renderPreguntas();           // limpia la UI de esta línea
+      updateProgress();            // vuelve a 0%
+      toast('“' + l.nombre + '” reiniciada');
+    }
+  );
+}
+$('#reset-linea').addEventListener('click', resetLinea);
+
+/* ---------- Borrar TODO ---------- */
+function resetAll(){
+  confirmModal(
+    'Borrar todo',
+    'Se borrarán las respuestas de las tres líneas. Esto no se puede deshacer.',
+    'Sí, borrar todo',
+    () => {
+      state = {};
+      saveState();
+      toast('Todo borrado');
+      renderHome();
+    }
+  );
+}
+$('#reset-all').addEventListener('click', resetAll);
 
 renderHome();
 </script>
