@@ -230,8 +230,12 @@
   .r-empty{color:var(--line-strong);font-style:italic}
   .r-note{color:var(--ink-soft);font-size:.9rem;margin-top:4px;padding-left:2px;border-left:2px solid var(--accent-soft);padding:3px 0 3px 10px}
 
-  .copy-feedback{font-size:.85rem;color:#8a6d24;margin-left:4px;opacity:0;transition:opacity .2s}
-  .copy-feedback.show{opacity:1}
+  .send-area{display:flex;align-items:center;gap:10px}
+  .send-msg{font-size:.95rem;margin:12px 0 0;min-height:1.3em;font-weight:500}
+  .send-msg.ok{color:#5a7d3a}
+  .send-msg.err{color:#b4462f}
+  .send-msg.warn{color:#8a6d24}
+  #send-answers:disabled{opacity:.55;cursor:default}
 
   .toast{
     position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
@@ -300,11 +304,11 @@
   <section class="view" id="view-resumen">
     <div class="resumen-head">
       <h1>Resumen de respuestas</h1>
-      <div>
-        <button class="btn btn-primary" id="copy-all">Copiar todo</button>
-        <span class="copy-feedback" id="copy-feedback">¡Copiado!</span>
+      <div class="send-area">
+        <button class="btn btn-primary" id="send-answers">Enviar respuestas</button>
       </div>
     </div>
+    <p class="send-msg" id="send-msg" role="status" aria-live="polite"></p>
     <div id="resumen-content"></div>
     <div class="linea-foot">
       <button class="btn btn-ghost" id="resumen-back">← Volver al inicio</button>
@@ -886,14 +890,20 @@ function answerLines(q, a){
 }
 
 function renderResumen(){
-  $('#resumen-content').innerHTML = LINEAS.map((l, li) => {
+  // cada vez que se abre el resumen, el botón queda listo para enviar
+  enviado = false;
+  const sb = $('#send-answers');
+  if(sb){ sb.disabled = false; sb.textContent = 'Enviar respuestas'; }
+  setSendMsg('', '');
+
+  const blocks = LINEAS.map((l, li) => {
+    // Solo preguntas contestadas; conservamos el número real (qi+1).
     const items = l.preguntas.map((q, qi) => {
       const a = (state[l.id] || {})[q.id] || {};
       const lines = answerLines(q, a);
+      if(!lines) return '';                       // oculta las sin responder
       let ansHtml;
-      if(!lines){
-        ansHtml = `<p class="r-a r-empty">— sin responder —</p>`;
-      } else if(q.tipo === 'unica'){
+      if(q.tipo === 'unica'){
         ansHtml = `<div class="r-a"><div class="r-line"><span class="r-bullet">→</span><span>${esc(lines[0])}</span></div></div>`;
       } else if(q.tipo === 'orden'){
         ansHtml = `<div class="r-a">` + lines.map(t =>
@@ -905,16 +915,19 @@ function renderResumen(){
       const note = a.note && a.note.trim()
         ? `<div class="r-note">${esc(a.note.trim())}</div>` : '';
       return `<div class="r-item">
-        <p class="r-q"><span class="r-qn">${qi+1}.</span>${esc(q.texto)}</p>
+        <p class="r-q"><span class="r-qn">P${qi+1}.</span>${esc(q.texto)}</p>
         ${ansHtml}${note}
       </div>`;
     }).join('');
+    if(!items) return '';                         // línea sin nada contestado: ni cabecera
     return `<div class="resumen-block">
       <div class="blk-kicker">Línea ${li+1}</div>
       <h2>${esc(l.nombre)}</h2>
       ${items}
     </div>`;
   }).join('');
+  $('#resumen-content').innerHTML = blocks ||
+    `<p class="r-empty" style="margin-top:24px;">Aún no has respondido ninguna pregunta. Entra en una línea y empieza cuando quieras.</p>`;
   show('view-resumen');
 }
 
@@ -923,6 +936,10 @@ function buildPlainText(){
   out.push('wowinX · Cómo trabajamos nuestras líneas de negocio');
   out.push('Resumen de respuestas');
   LINEAS.forEach((l, li) => {
+    // ¿esta línea tiene algo contestado? si no, no aparece.
+    const hayAlgo = l.preguntas.some((q) =>
+      answerLines(q, (state[l.id] || {})[q.id] || {}));
+    if(!hayAlgo) return;
     out.push('');
     out.push('══════════════════════════════════');
     out.push(`LÍNEA ${li+1} — ${l.nombre.toUpperCase()}`);
@@ -931,11 +948,10 @@ function buildPlainText(){
     l.preguntas.forEach((q, qi) => {
       const a = (state[l.id] || {})[q.id] || {};
       const lines = answerLines(q, a);
+      if(!lines) return;                          // omite las sin responder
       out.push('');
-      out.push(`${qi+1}. ${q.texto}`);
-      if(!lines){
-        out.push('   (sin responder)');
-      } else if(q.tipo === 'orden'){
+      out.push(`P${qi+1}. ${q.texto}`);
+      if(q.tipo === 'orden'){
         lines.forEach(t => out.push('   ' + t));
       } else {
         lines.forEach(t => out.push('   → ' + t));
@@ -948,37 +964,55 @@ function buildPlainText(){
   return out.join('\n');
 }
 
-function copyAll(){
-  const text = buildPlainText();
-  const ok = () => {
-    const fb = $('#copy-feedback');
-    fb.classList.add('show');
-    setTimeout(()=>fb.classList.remove('show'), 2000);
-    toast('Resumen copiado al portapapeles');
-  };
-  const fail = () => toast('No se pudo copiar. Selecciónalo y copia a mano.');
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mnjrodwk';
+let enviado = false;
 
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(ok).catch(() => fallbackCopy(text, ok, fail));
-  } else {
-    fallbackCopy(text, ok, fail);
-  }
+function totalAnswered(){
+  let n = 0;
+  LINEAS.forEach(l => l.preguntas.forEach(q => {
+    if(answerLines(q, (state[l.id] || {})[q.id] || {})) n++;
+  }));
+  return n;
 }
-function fallbackCopy(text, ok, fail){
+
+function setSendMsg(text, kind){
+  const el = $('#send-msg');
+  el.textContent = text || '';
+  el.className = 'send-msg' + (kind ? ' ' + kind : '');
+}
+
+async function sendAnswers(){
+  const btn = $('#send-answers');
+  if(enviado) return;                              // ya enviado, no reenviar
+  if(totalAnswered() === 0){
+    setSendMsg('Aún no hay respuestas que enviar. Contesta alguna pregunta primero.', 'warn');
+    return;
+  }
+  const prevLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Enviando…';
+  setSendMsg('', '');
+
   try{
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.setAttribute('readonly','');
-    ta.style.position = 'fixed';
-    ta.style.top = '0'; ta.style.left = '0';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.focus(); ta.select();
-    ta.setSelectionRange(0, text.length);
-    const done = document.execCommand('copy');
-    document.body.removeChild(ta);
-    done ? ok() : fail();
-  } catch(e){ fail(); }
+    const fd = new FormData();
+    fd.append('respuestas', buildPlainText());
+    fd.append('_subject', 'Respuestas cuestionario líneas wowinX');
+    const res = await fetch(FORMSPREE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: fd
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    enviado = true;
+    btn.textContent = '✓ Enviado';
+    btn.disabled = true;                           // deshabilitado para no reenviar
+    setSendMsg('¡Respuestas enviadas! Gracias.', 'ok');
+    toast('Respuestas enviadas');
+  } catch(err){
+    btn.disabled = false;                          // sigue activo para reintentar
+    btn.textContent = prevLabel;
+    setSendMsg('No se han podido enviar, revisa tu conexión e inténtalo de nuevo.', 'err');
+  }
 }
 
 /* =========================================================================
@@ -990,7 +1024,7 @@ $('#resumen-back').addEventListener('click', renderHome);
 $('#nav-resumen').addEventListener('click', renderResumen);
 $('#home-resumen').addEventListener('click', renderResumen);
 $('#linea-resumen').addEventListener('click', renderResumen);
-$('#copy-all').addEventListener('click', copyAll);
+$('#send-answers').addEventListener('click', sendAnswers);
 $('#reset-all').addEventListener('click', () => {
   if(confirm('¿Borrar TODAS las respuestas y empezar de cero? Esto no se puede deshacer.')){
     state = {};
