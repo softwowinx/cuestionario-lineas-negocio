@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>wowinX · Cómo trabajamos nuestras líneas de negocio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F4ED;
+    --surface:#FFFFFF;
+    --ink:#1C1B19;
+    --ink-soft:#5C594F;
+    --line:#E4DECF;
+    --line-strong:#D2C9B2;
+    --accent:#C8A24B;
+    --accent-soft:#F3ECD8;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(28,27,25,.04), 0 8px 24px rgba(28,27,25,.05);
+    --serif:'Cormorant Garamond', Georgia, serif;
+    --sans:'Jost', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-weight:400;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  /* ---------- Header ---------- */
+  header.bar{
+    position:sticky;top:0;z-index:20;
+    display:flex;align-items:center;gap:14px;
+    padding:12px 18px;
+    background:rgba(247,244,237,.92);
+    backdrop-filter:saturate(140%) blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .logo{height:52px;width:auto;border-radius:8px;display:block;flex:0 0 auto}
+  .logo-fallback{
+    height:52px;display:flex;align-items:center;padding:0 16px;
+    background:#0F0F0E;color:#fff;border-radius:8px;
+    font-family:var(--serif);font-weight:600;font-size:1.35rem;letter-spacing:.5px;
+  }
+  .bar-spacer{flex:1 1 auto}
+  .bar-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+
+  /* ---------- Buttons ---------- */
+  button{font-family:var(--sans);cursor:pointer;border:none;background:none}
+  .btn{
+    font-size:.9rem;font-weight:500;letter-spacing:.2px;
+    padding:10px 16px;border-radius:999px;
+    border:1px solid var(--line-strong);
+    background:var(--surface);color:var(--ink);
+    transition:border-color .15s, background .15s, transform .05s;
+    min-height:42px;
+  }
+  .btn:hover{border-color:var(--ink)}
+  .btn:active{transform:translateY(1px)}
+  .btn-ghost{border-color:transparent;background:transparent;color:var(--ink-soft)}
+  .btn-ghost:hover{color:var(--ink);border-color:var(--line)}
+  .btn-primary{
+    background:var(--accent);border-color:var(--accent);color:#1C1B19;font-weight:600;
+  }
+  .btn-primary:hover{background:#bb9540;border-color:#bb9540}
+
+  /* ---------- Layout ---------- */
+  main{max-width:760px;margin:0 auto;padding:28px 18px 80px}
+  .view{display:none}
+  .view.active{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* ---------- Home ---------- */
+  .hero{text-align:center;padding:18px 4px 30px}
+  .hero h1{
+    font-family:var(--serif);font-weight:600;
+    font-size:clamp(2.1rem,7vw,3.2rem);line-height:1.05;
+    margin:0 0 14px;letter-spacing:.3px;
+  }
+  .hero .kicker{
+    font-size:.78rem;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--accent);font-weight:500;margin-bottom:14px;
+  }
+  .hero p{color:var(--ink-soft);font-size:1.05rem;max-width:48ch;margin:0 auto}
+
+  .lineas{display:flex;flex-direction:column;gap:14px;margin-top:8px}
+  .linea-card{
+    display:flex;align-items:center;gap:16px;text-align:left;width:100%;
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);padding:20px 18px;box-shadow:var(--shadow);
+    transition:border-color .15s, transform .06s;
+  }
+  .linea-card:hover{border-color:var(--line-strong)}
+  .linea-card:active{transform:translateY(1px)}
+  .linea-num{
+    font-family:var(--serif);font-size:1.7rem;font-weight:600;
+    color:var(--accent);flex:0 0 auto;width:34px;text-align:center;
+  }
+  .linea-body{flex:1 1 auto;min-width:0}
+  .linea-body h2{font-family:var(--serif);font-weight:600;font-size:1.5rem;margin:0 0 2px}
+  .linea-body .desc{color:var(--ink-soft);font-size:.9rem;margin:0 0 8px}
+  .linea-arrow{font-size:1.4rem;color:var(--ink-soft);flex:0 0 auto}
+
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:.78rem;font-weight:500;padding:4px 10px;border-radius:999px;
+    background:#F0ECE0;color:var(--ink-soft);
+  }
+  .pill.done{background:var(--accent-soft);color:#8a6d24}
+  .pill .tick{color:var(--accent);font-weight:700}
+
+  .home-foot{text-align:center;margin-top:26px}
+
+  /* ---------- Linea view ---------- */
+  .linea-head{margin-bottom:8px}
+  .linea-head .kicker{
+    font-size:.74rem;letter-spacing:.26em;text-transform:uppercase;
+    color:var(--accent);font-weight:500;
+  }
+  .linea-head h1{font-family:var(--serif);font-weight:600;font-size:clamp(1.9rem,6vw,2.6rem);margin:6px 0 4px}
+  .linea-head .desc{color:var(--ink-soft);margin:0}
+
+  .progress-wrap{
+    position:sticky;top:77px;z-index:10;
+    background:var(--bg);padding:12px 0 14px;margin-bottom:6px;
+    border-bottom:1px solid var(--line);
+  }
+  .progress-label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--ink-soft);margin-bottom:7px}
+  .progress-track{height:6px;background:#E7E1D2;border-radius:999px;overflow:hidden}
+  .progress-fill{height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .3s ease}
+
+  /* ---------- Question card ---------- */
+  .q-card{
+    background:var(--surface);border:1px solid var(--line);
+    border-left:3px solid var(--line);
+    border-radius:var(--radius);padding:20px 18px;margin:16px 0;
+    box-shadow:var(--shadow);transition:border-color .2s;
+  }
+  .q-card:focus-within{border-left-color:var(--accent)}
+  .q-card.answered{border-left-color:var(--accent)}
+  .q-head{display:flex;gap:12px;align-items:baseline;margin-bottom:14px}
+  .q-num{
+    font-family:var(--serif);font-size:1.25rem;font-weight:600;color:var(--accent);
+    flex:0 0 auto;line-height:1.2;
+  }
+  .q-text{font-size:1.12rem;font-weight:500;margin:0;line-height:1.35}
+  .q-answered-tick{margin-left:auto;color:var(--accent);font-weight:700;opacity:0;transition:opacity .2s;font-size:1.05rem}
+  .q-card.answered .q-answered-tick{opacity:1}
+
+  .opts{display:flex;flex-direction:column;gap:9px}
+  .opt{
+    display:flex;align-items:center;gap:12px;
+    border:1px solid var(--line);border-radius:11px;
+    padding:13px 14px;cursor:pointer;min-height:50px;
+    transition:border-color .12s, background .12s;
+    user-select:none;
+  }
+  .opt:hover{border-color:var(--line-strong)}
+  .opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+  .opt input{position:absolute;opacity:0;width:0;height:0}
+  .opt-box{
+    flex:0 0 auto;width:22px;height:22px;border:2px solid var(--line-strong);
+    display:flex;align-items:center;justify-content:center;
+    font-size:.8rem;color:#fff;transition:all .12s;
+  }
+  .opt input[type=radio]~.opt-box{border-radius:50%}
+  .opt input[type=checkbox]~.opt-box{border-radius:6px}
+  .opt:has(input:checked) .opt-box{background:var(--accent);border-color:var(--accent)}
+  .opt:has(input[type=radio]:checked) .opt-box::after{content:"";width:9px;height:9px;border-radius:50%;background:#fff}
+  .opt:has(input[type=checkbox]:checked) .opt-box::after{content:"✓"}
+  .opt-txt{flex:1 1 auto;font-size:1rem;line-height:1.35}
+
+  /* ---------- Orden ---------- */
+  .orden-hint{font-size:.82rem;color:var(--ink-soft);margin:0 0 10px}
+  .orden-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+  .orden-item{
+    display:flex;align-items:center;gap:12px;
+    border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:var(--surface);
+  }
+  .orden-pos{
+    flex:0 0 auto;width:30px;height:30px;border-radius:50%;
+    background:var(--accent-soft);color:#8a6d24;font-weight:600;
+    display:flex;align-items:center;justify-content:center;font-size:.95rem;
+  }
+  .orden-txt{flex:1 1 auto;font-size:1rem;line-height:1.3}
+  .orden-ctrls{flex:0 0 auto;display:flex;gap:6px}
+  .orden-ctrls button{
+    width:38px;height:38px;border-radius:9px;border:1px solid var(--line-strong);
+    background:var(--surface);font-size:1rem;color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .orden-ctrls button:hover{border-color:var(--ink)}
+  .orden-ctrls button:disabled{opacity:.3;cursor:default}
+
+  /* ---------- Matiz ---------- */
+  .matiz-wrap{margin-top:14px}
+  .matiz-wrap label{display:block;font-size:.8rem;color:var(--ink-soft);margin-bottom:5px;letter-spacing:.02em}
+  textarea.matiz{
+    width:100%;min-height:44px;resize:vertical;
+    font-family:var(--sans);font-size:.95rem;color:var(--ink);
+    border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#FCFBF7;
+    transition:border-color .12s;
+  }
+  textarea.matiz:focus{outline:none;border-color:var(--accent)}
+
+  .linea-foot{display:flex;justify-content:space-between;gap:10px;margin-top:26px;flex-wrap:wrap}
+
+  /* ---------- Resumen ---------- */
+  .resumen-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  .resumen-head h1{font-family:var(--serif);font-weight:600;font-size:clamp(1.9rem,6vw,2.6rem);margin:0}
+  .resumen-block{margin-top:26px}
+  .resumen-block h2{
+    font-family:var(--serif);font-weight:600;font-size:1.55rem;
+    border-bottom:1px solid var(--line);padding-bottom:7px;margin:0 0 4px;
+  }
+  .resumen-block .blk-kicker{font-size:.72rem;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);font-weight:500}
+  .r-item{padding:13px 0;border-bottom:1px dashed var(--line)}
+  .r-q{font-weight:500;font-size:1rem;margin:0 0 5px}
+  .r-q .r-qn{color:var(--accent);font-weight:600;margin-right:6px}
+  .r-a{margin:0;color:var(--ink);font-size:.97rem}
+  .r-a .r-line{display:flex;gap:8px;padding:2px 0}
+  .r-a .r-bullet{color:var(--accent);flex:0 0 auto}
+  .r-empty{color:var(--line-strong);font-style:italic}
+  .r-note{color:var(--ink-soft);font-size:.9rem;margin-top:4px;padding-left:2px;border-left:2px solid var(--accent-soft);padding:3px 0 3px 10px}
+
+  .copy-feedback{font-size:.85rem;color:#8a6d24;margin-left:4px;opacity:0;transition:opacity .2s}
+  .copy-feedback.show{opacity:1}
+
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:12px 20px;border-radius:999px;
+    font-size:.9rem;opacity:0;pointer-events:none;transition:all .25s;z-index:50;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:520px){
+    header.bar{padding:10px 14px}
+    main{padding:22px 14px 80px}
+    .linea-card{padding:18px 15px}
+    .q-card{padding:18px 15px}
+    .bar-actions .btn{padding:9px 13px;font-size:.85rem}
+  }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <img class="logo" src="wowinx_logo.jpeg" alt="wowinX"
+       onerror="this.outerHTML='<div class=&quot;logo-fallback&quot;>wowinX</div>'">
+  <div class="bar-spacer"></div>
+  <div class="bar-actions">
+    <button class="btn btn-ghost" id="nav-home">← Inicio</button>
+    <button class="btn" id="nav-resumen">Ver resumen</button>
+  </div>
+</header>
+
+<main>
+  <!-- ============ HOME ============ -->
+  <section class="view active" id="view-home">
+    <div class="hero">
+      <div class="kicker">wowinX</div>
+      <h1>Cómo trabajamos nuestras líneas de negocio</h1>
+      <p>Un repaso, línea a línea, de cómo funcionamos por dentro. Entra en la que quieras y en el orden que prefieras; tus respuestas se guardan solas.</p>
+    </div>
+    <div class="lineas" id="home-lineas"></div>
+    <div class="home-foot">
+      <button class="btn btn-primary" id="home-resumen">Ver resumen de todo →</button>
+    </div>
+  </section>
+
+  <!-- ============ LINEA ============ -->
+  <section class="view" id="view-linea">
+    <div class="linea-head">
+      <div class="kicker" id="linea-kicker"></div>
+      <h1 id="linea-title"></h1>
+      <p class="desc" id="linea-desc"></p>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span id="progress-text">0 de 0 respondidas</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+    <div id="preguntas"></div>
+    <div class="linea-foot">
+      <button class="btn btn-ghost" id="linea-back">← Volver al inicio</button>
+      <button class="btn btn-primary" id="linea-resumen">Ver resumen →</button>
+    </div>
+  </section>
+
+  <!-- ============ RESUMEN ============ -->
+  <section class="view" id="view-resumen">
+    <div class="resumen-head">
+      <h1>Resumen de respuestas</h1>
+      <div>
+        <button class="btn btn-primary" id="copy-all">Copiar todo</button>
+        <span class="copy-feedback" id="copy-feedback">¡Copiado!</span>
+      </div>
+    </div>
+    <div id="resumen-content"></div>
+    <div class="linea-foot">
+      <button class="btn btn-ghost" id="resumen-back">← Volver al inicio</button>
+      <button class="btn btn-ghost" id="reset-all" style="color:#a35;">Empezar de cero</button>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+   DATOS — edita aquí las preguntas. Cada pregunta:
+     { id, tipo: 'unica' | 'multiple' | 'orden', texto, opciones: [...] }
+   ========================================================================= */
+const LINEAS = [
+  {
+    id: 'inversion',
+    nombre: 'Inversión',
+    desc: 'Intermediación para conseguir inversión para una empresa',
+    preguntas: [
+      { id:'p1', tipo:'unica', texto:'¿Por dónde nos entra normalmente una operación?', opciones:[
+        'Nos llega primero la empresa que busca inversión',
+        'Nos llega primero el inversor buscando dónde invertir',
+        'Nos entra por los dos lados, según el caso',
+        'Solemos conocer ya a ambas partes' ]},
+      { id:'p2', tipo:'orden', texto:'Cuando nos llega una empresa, ¿qué hacemos y en qué orden?', opciones:[
+        'Nos reunimos con ella para entender qué necesita',
+        'La analizamos a fondo (viabilidad, números, encaje)',
+        'Firmamos el mandato/acuerdo con ella',
+        'Preparamos el material para presentarla',
+        'Otro' ]},
+      { id:'p3', tipo:'unica', texto:'¿En qué momento firmamos el mandato con la empresa?', opciones:[
+        'Tras la primera reunión, antes de analizarla a fondo',
+        'Después de analizarla, si nos convence',
+        'En paralelo al análisis',
+        'No siempre firmamos mandato' ]},
+      { id:'p4', tipo:'multiple', texto:'¿Con qué documento(s) formalizamos el acuerdo con la empresa?', opciones:[
+        'Mandato de búsqueda de inversión',
+        'Acuerdo de exclusividad',
+        'NDA con la empresa',
+        'Hoja de condiciones / fee agreement',
+        'Otro' ]},
+      { id:'p5', tipo:'unica', texto:'¿Cuándo dejamos pactado nuestro fee por la gestión?', opciones:[
+        'En el mandato, desde el principio',
+        'Lo negociamos aparte, más adelante',
+        'Depende de la operación',
+        'Aún no lo tenemos claro' ]},
+      { id:'p6', tipo:'unica', texto:'¿A quién le cobramos el fee?', opciones:[
+        'A la empresa (a la que le conseguimos la inversión)',
+        'Al inversor',
+        'Un % a cada lado',
+        'Depende / aún no definido' ]},
+      { id:'p7', tipo:'multiple', texto:'¿Cómo estructuramos nuestro fee?', opciones:[
+        'Success fee (solo cobramos si la operación cierra)',
+        'Retainer (fijo mensual mientras dura el mandato)',
+        'Retainer + success fee',
+        '% sobre la inversión conseguida',
+        'Cantidad fija pactada',
+        'Otro' ]},
+      { id:'p8', tipo:'unica', texto:'Ya con el análisis hecho, ¿cómo arrancamos la búsqueda de dinero?', opciones:[
+        'Hacemos la lista de inversores a los que vamos a ir',
+        'Preparamos primero el material de presentación',
+        'Las dos cosas a la vez',
+        'Otro' ]},
+      { id:'p9', tipo:'multiple', texto:'¿Qué material preparamos para presentar la operación?', opciones:[
+        'Teaser (resumen anónimo de una página)',
+        'Dossier / memorándum de inversión',
+        'Pitch deck',
+        'Modelo financiero / proyecciones',
+        'Otro' ]},
+      { id:'p10', tipo:'unica', texto:'¿Cómo contactamos a los inversores?', opciones:[
+        'Contacto directo, por nuestra red',
+        'Email o presentación en frío',
+        'A través de terceros que nos presentan',
+        'Un poco de todo' ]},
+      { id:'p11', tipo:'unica', texto:'Cuando un inversor muestra interés, ¿qué hacemos primero?', opciones:[
+        'Le pedimos firmar el NDA y le damos acceso a la info detallada',
+        'Montamos una reunión entre él y la empresa',
+        'Le pasamos más documentación sin NDA',
+        'Otro' ]},
+      { id:'p12', tipo:'multiple', texto:'Ya con el inversor dentro, ¿qué pasos damos en la negociación?', opciones:[
+        'Periodo de due diligence',
+        'Trabajamos un term sheet / hoja de términos',
+        'Negociamos condiciones (valoración, %)',
+        'Reuniones para cerrar detalles',
+        'No tenemos un proceso fijo, nos varía mucho',
+        'Otro' ]},
+      { id:'p13', tipo:'unica', texto:'¿Cuánto peso llevamos nosotros en esa negociación?', opciones:[
+        'Intermediamos activamente, llevamos la negociación',
+        'Dejamos que negocien directamente empresa e inversor',
+        'Acompañamos pero no decidimos',
+        'Depende' ]},
+      { id:'p14', tipo:'unica', texto:'¿Cuándo damos una operación por CERRADA (ganada)?', opciones:[
+        'Cuando se firma el acuerdo de inversión',
+        'Cuando el dinero entra de verdad en la empresa',
+        'Cuando hay acuerdo verbal / term sheet aceptado',
+        'Aún no lo tenemos claro' ]},
+      { id:'p15', tipo:'unica', texto:'¿Cuándo cobramos nuestro fee?', opciones:[
+        'Al firmarse el acuerdo de inversión',
+        'Cuando el dinero entra de verdad',
+        'A plazos, según hitos',
+        'Depende / aún no definido' ]},
+      { id:'p16', tipo:'multiple', texto:'¿Qué hace que se nos caiga una operación?', opciones:[
+        'La empresa no nos pasa el análisis',
+        'No encontramos inversor interesado',
+        'El inversor se echa atrás en la due diligence',
+        'No hay acuerdo en las condiciones',
+        'La empresa se va con otro intermediario',
+        'Otro' ]},
+      { id:'p17', tipo:'multiple', texto:'Una vez cerrada, ¿qué hacemos después?', opciones:[
+        'Nada, para nosotros termina al cobrar',
+        'Vigilamos que el dinero entre en los plazos pactados',
+        'Mantenemos la relación con la empresa para futuras rondas',
+        'Mantenemos la relación con el inversor para futuras operaciones',
+        'Controlamos nuestro fee si se cobra a plazos',
+        'Otro' ]},
+      { id:'p18', tipo:'unica', texto:'¿Hasta cuándo seguimos haciendo ese seguimiento?', opciones:[
+        'Hasta que cobramos todo el fee y cerramos',
+        'De forma indefinida, mantenemos viva la relación',
+        'Un periodo concreto (especificar)',
+        'No hacemos seguimiento formal' ]},
+    ]
+  },
+  {
+    id: 'patrocinios',
+    nombre: 'Patrocinios',
+    desc: 'Intermediación para conseguir patrocinadores o marcas colaboradoras',
+    preguntas: [
+      { id:'p1', tipo:'unica', texto:'¿Por dónde nos entra normalmente una operación?', opciones:[
+        'Nos llega el proyecto/evento que busca patrocinador',
+        'Nos llega la marca que quiere patrocinar algo',
+        'Nos entra por los dos lados, según el caso',
+        'Otro' ]},
+      { id:'p2', tipo:'orden', texto:'Cuando nos llega un proyecto que busca patrocinio, ¿qué hacemos y en qué orden?', opciones:[
+        'Nos reunimos para entender el proyecto y qué busca',
+        'Lo analizamos (encaje, valor, a qué marcas puede interesar)',
+        'Firmamos el acuerdo/mandato con el proyecto',
+        'Preparamos el material para presentarlo a marcas',
+        'Otro' ]},
+      { id:'p3', tipo:'unica', texto:'¿En qué momento firmamos el acuerdo con el proyecto?', opciones:[
+        'Tras la primera reunión, antes de ponernos a trabajarlo',
+        'Después de analizarlo, si nos convence',
+        'En paralelo al análisis',
+        'No siempre firmamos acuerdo' ]},
+      { id:'p4', tipo:'multiple', texto:'¿Con qué documento(s) formalizamos el acuerdo con el proyecto?', opciones:[
+        'Mandato de búsqueda de patrocinio',
+        'Acuerdo de exclusividad',
+        'NDA',
+        'Hoja de condiciones / fee agreement',
+        'Otro' ]},
+      { id:'p5', tipo:'unica', texto:'¿Cuándo dejamos pactado nuestro fee?', opciones:[
+        'En el acuerdo inicial, desde el principio',
+        'Lo negociamos aparte, más adelante',
+        'Depende de la operación',
+        'Aún no lo tenemos claro' ]},
+      { id:'p6', tipo:'unica', texto:'¿A quién le cobramos el fee?', opciones:[
+        'Al proyecto/evento',
+        'A la marca patrocinadora',
+        'Un % a cada lado',
+        'Depende / aún no definido' ]},
+      { id:'p7', tipo:'multiple', texto:'¿Cómo estructuramos nuestro fee?', opciones:[
+        'Success fee (solo si se cierra el patrocinio)',
+        'Retainer (fijo mensual mientras dura el encargo)',
+        'Retainer + success fee',
+        '% sobre el importe del patrocinio',
+        'Cantidad fija pactada',
+        'Otro' ]},
+      { id:'p8', tipo:'unica', texto:'¿Cómo definimos a qué marcas vamos?', opciones:[
+        'Lista de marcas objetivo según encaje',
+        'Marcas con las que ya tenemos relación',
+        'Las dos cosas',
+        'Otro' ]},
+      { id:'p9', tipo:'multiple', texto:'¿Qué material preparamos para presentar el proyecto a las marcas?', opciones:[
+        'Dossier de patrocinio / sponsorship deck',
+        'Propuesta de activación a medida por marca',
+        'Datos de audiencia / alcance / retorno',
+        'Tarifario de niveles de patrocinio',
+        'Otro' ]},
+      { id:'p10', tipo:'unica', texto:'¿Cómo contactamos a las marcas?', opciones:[
+        'Contacto directo, por nuestra red',
+        'Email o presentación en frío',
+        'A través de terceros que nos presentan',
+        'Un poco de todo' ]},
+      { id:'p11', tipo:'unica', texto:'Cuando una marca muestra interés, ¿qué hacemos primero?', opciones:[
+        'Reunión entre la marca y el proyecto',
+        'Le pasamos la propuesta detallada / dossier completo',
+        'Firma de NDA antes de dar detalles',
+        'Otro' ]},
+      { id:'p12', tipo:'multiple', texto:'¿Qué pasos damos en la negociación con la marca?', opciones:[
+        'Definir qué incluye el patrocinio (contraprestaciones)',
+        'Negociar importe y duración',
+        'Propuesta formal / contrato de patrocinio',
+        'Reuniones para cerrar detalles',
+        'No tenemos proceso fijo, nos varía',
+        'Otro' ]},
+      { id:'p13', tipo:'unica', texto:'¿Cuánto peso llevamos en esa negociación?', opciones:[
+        'Negociamos nosotros activamente',
+        'Dejamos que negocien directamente proyecto y marca',
+        'Acompañamos pero no decidimos',
+        'Depende' ]},
+      { id:'p14', tipo:'unica', texto:'¿Cuándo damos un patrocinio por CERRADO?', opciones:[
+        'Cuando se firma el contrato de patrocinio',
+        'Cuando la marca paga',
+        'Cuando hay acuerdo verbal aceptado',
+        'Aún no lo tenemos claro' ]},
+      { id:'p15', tipo:'unica', texto:'¿Cuándo cobramos nuestro fee?', opciones:[
+        'Al firmarse el contrato de patrocinio',
+        'Cuando la marca paga',
+        'A plazos, según hitos',
+        'Depende / aún no definido' ]},
+      { id:'p16', tipo:'multiple', texto:'¿Qué hace que se nos caiga una operación?', opciones:[
+        'El proyecto no nos convence al analizarlo',
+        'No encontramos marca interesada',
+        'La marca se echa atrás',
+        'No hay acuerdo en importe o contraprestaciones',
+        'El proyecto se va con otro intermediario',
+        'Otro' ]},
+      { id:'p17', tipo:'multiple', texto:'Una vez cerrado el patrocinio, ¿qué hacemos después?', opciones:[
+        'Nada, para nosotros termina al cobrar',
+        'Vigilamos que se cumplan las contraprestaciones pactadas',
+        'Mantenemos relación con el proyecto para futuras ediciones',
+        'Mantenemos relación con la marca para futuros patrocinios',
+        'Controlamos nuestro fee si se cobra a plazos',
+        'Otro' ]},
+      { id:'p18', tipo:'unica', texto:'¿Hasta cuándo seguimos haciendo seguimiento?', opciones:[
+        'Hasta que cobramos todo el fee',
+        'Durante toda la vigencia del patrocinio (renovaciones)',
+        'De forma indefinida',
+        'No hacemos seguimiento formal' ]},
+    ]
+  },
+  {
+    id: 'desarrollos',
+    nombre: 'Desarrollos a medida',
+    desc: 'Apps y desarrollos a medida para clientes',
+    preguntas: [
+      { id:'p1', tipo:'unica', texto:'¿Por dónde nos entra normalmente un encargo?', opciones:[
+        'Nos llega el cliente que quiere una app/desarrollo concreto',
+        'Nosotros detectamos la necesidad y la proponemos',
+        'Los dos, según el caso',
+        'Otro' ]},
+      { id:'p2', tipo:'orden', texto:'Cuando nos llega un cliente, ¿qué hacemos y en qué orden?', opciones:[
+        'Reunión para entender qué necesita',
+        'Análisis de viabilidad técnica y alcance',
+        'Propuesta / presupuesto',
+        'Firma del contrato de desarrollo',
+        'Otro' ]},
+      { id:'p3', tipo:'multiple', texto:'¿Cómo definimos qué hay que construir?', opciones:[
+        'Brief / documento de requisitos con el cliente',
+        'Reuniones de toma de necesidades',
+        'Lo definimos nosotros y lo validamos con él',
+        'Otro' ]},
+      { id:'p4', tipo:'unica', texto:'¿En qué momento firmamos/cerramos el contrato con el cliente?', opciones:[
+        'Tras aceptar el presupuesto, antes de empezar a desarrollar',
+        'Después de una fase de definición/discovery pagada',
+        'Por fases (cada fase su acuerdo)',
+        'Otro' ]},
+      { id:'p5', tipo:'multiple', texto:'¿Con qué documento(s) formalizamos el encargo?', opciones:[
+        'Propuesta / presupuesto aceptado',
+        'Contrato de desarrollo',
+        'Documento de alcance (scope) / SOW',
+        'NDA',
+        'Otro' ]},
+      { id:'p6', tipo:'multiple', texto:'¿Cómo cobramos el desarrollo?', opciones:[
+        'Precio cerrado por proyecto',
+        'Por fases / hitos',
+        'Por horas / tiempo y materiales',
+        'Un % por adelantado + resto al entregar',
+        'Cuota de mantenimiento posterior',
+        'Otro' ]},
+      { id:'p7', tipo:'unica', texto:'Durante el desarrollo, ¿cómo trabajamos con el cliente?', opciones:[
+        'Entregas por fases con validación del cliente',
+        'Una entrega final',
+        'Metodología ágil (sprints, demos periódicas)',
+        'Depende del proyecto' ]},
+      { id:'p8', tipo:'unica', texto:'¿Quién hace el desarrollo?', opciones:[
+        'Nosotros internamente',
+        'Lo subcontratamos / equipo externo',
+        'Mezcla (coordinamos nosotros, ejecuta un tercero)',
+        'Depende' ]},
+      { id:'p9', tipo:'multiple', texto:'¿Qué hitos/entregables marcan el avance?', opciones:[
+        'Prototipo / diseño aprobado',
+        'Versión de prueba (beta)',
+        'Entrega final / puesta en producción',
+        'Otro' ]},
+      { id:'p10', tipo:'unica', texto:'¿Cuándo damos un desarrollo por CERRADO (entregado)?', opciones:[
+        'Cuando se entrega y el cliente lo acepta',
+        'Cuando está en producción y funcionando',
+        'Cuando pasa un periodo de garantía',
+        'Otro' ]},
+      { id:'p11', tipo:'unica', texto:'¿Cuándo cobramos el grueso del trabajo?', opciones:[
+        'Al entregar',
+        'Por hitos durante el desarrollo',
+        'Adelanto + resto a la entrega',
+        'Depende / aún no definido' ]},
+      { id:'p12', tipo:'multiple', texto:'¿Qué hace que se nos caiga o complique un proyecto?', opciones:[
+        'El cliente no aprueba el presupuesto',
+        'El alcance se descontrola (cambios constantes)',
+        'Problemas técnicos / de plazos',
+        'El cliente deja de pagar',
+        'Otro' ]},
+      { id:'p13', tipo:'multiple', texto:'Una vez entregado, ¿qué hacemos después?', opciones:[
+        'Nada, termina con la entrega',
+        'Periodo de garantía / corrección de errores',
+        'Contrato de mantenimiento continuo',
+        'Mantenemos relación para nuevas fases o proyectos',
+        'Otro' ]},
+      { id:'p14', tipo:'unica', texto:'¿Ofrecemos mantenimiento o soporte posterior?', opciones:[
+        'Sí, con cuota recurrente',
+        'Solo si el cliente lo contrata aparte',
+        'Garantía limitada y luego se acaba',
+        'No lo tenemos definido' ]},
+    ]
+  }
+];
+
+/* =========================================================================
+   ESTADO + PERSISTENCIA
+   ========================================================================= */
+const STORE_KEY = 'wowinx_cuestionario_v1';
+let state = loadState();
+let currentLinea = null;
+
+function loadState(){
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function saveState(){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e){}
+}
+function ansFor(lid, qid){
+  if(!state[lid]) state[lid] = {};
+  if(!state[lid][qid]) state[lid][qid] = {};
+  return state[lid][qid];
+}
+function isAnswered(q, a){
+  if(!a) return false;
+  if(q.tipo==='unica')    return typeof a.choice === 'number';
+  if(q.tipo==='multiple') return Array.isArray(a.choices) && a.choices.length > 0;
+  if(q.tipo==='orden')    return Array.isArray(a.order);
+  return false;
+}
+function lineaProgress(linea){
+  const ls = state[linea.id] || {};
+  let done = 0;
+  linea.preguntas.forEach(q => { if(isAnswered(q, ls[q.id])) done++; });
+  return { done, total: linea.preguntas.length };
+}
+
+/* =========================================================================
+   UTILIDADES
+   ========================================================================= */
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+function $(sel){ return document.querySelector(sel); }
+function show(viewId){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  $('#'+viewId).classList.add('active');
+  window.scrollTo({top:0});
+}
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+/* =========================================================================
+   HOME
+   ========================================================================= */
+function renderHome(){
+  const wrap = $('#home-lineas');
+  wrap.innerHTML = LINEAS.map((l, i) => {
+    const {done, total} = lineaProgress(l);
+    const complete = done === total;
+    const pill = complete
+      ? `<span class="pill done"><span class="tick">✓</span> Completa</span>`
+      : (done > 0
+          ? `<span class="pill">${done} de ${total} respondidas</span>`
+          : `<span class="pill">Sin empezar · ${total} preguntas</span>`);
+    return `
+      <button class="linea-card" data-linea="${l.id}">
+        <span class="linea-num">${i+1}</span>
+        <span class="linea-body">
+          <h2>${esc(l.nombre)}</h2>
+          <p class="desc">${esc(l.desc)}</p>
+          ${pill}
+        </span>
+        <span class="linea-arrow">→</span>
+      </button>`;
+  }).join('');
+  wrap.querySelectorAll('.linea-card').forEach(btn => {
+    btn.addEventListener('click', () => openLinea(btn.dataset.linea));
+  });
+  show('view-home');
+}
+
+/* =========================================================================
+   LÍNEA
+   ========================================================================= */
+function openLinea(id){
+  currentLinea = LINEAS.find(l => l.id === id);
+  $('#linea-kicker').textContent = 'Línea de negocio';
+  $('#linea-title').textContent = currentLinea.nombre;
+  $('#linea-desc').textContent = currentLinea.desc;
+  renderPreguntas();
+  updateProgress();
+  show('view-linea');
+}
+
+function renderPreguntas(){
+  const l = currentLinea;
+  $('#preguntas').innerHTML = l.preguntas.map((q, i) =>
+    renderPregunta(l.id, q, i+1)
+  ).join('');
+  bindPreguntas();
+}
+
+function renderPregunta(lid, q, num){
+  const a = ansFor(lid, q.id);
+  const answered = isAnswered(q, a) ? 'answered' : '';
+  let body = '';
+
+  if(q.tipo === 'unica'){
+    body = `<div class="opts">` + q.opciones.map((opt, i) => `
+      <label class="opt">
+        <input type="radio" name="${lid}-${q.id}" data-l="${lid}" data-q="${q.id}" data-i="${i}"
+          ${a.choice === i ? 'checked' : ''}>
+        <span class="opt-box"></span>
+        <span class="opt-txt">${esc(opt)}</span>
+      </label>`).join('') + `</div>`;
+  }
+  else if(q.tipo === 'multiple'){
+    const sel = a.choices || [];
+    body = `<div class="opts">` + q.opciones.map((opt, i) => `
+      <label class="opt">
+        <input type="checkbox" data-l="${lid}" data-q="${q.id}" data-i="${i}"
+          ${sel.includes(i) ? 'checked' : ''}>
+        <span class="opt-box"></span>
+        <span class="opt-txt">${esc(opt)}</span>
+      </label>`).join('') + `</div>`;
+  }
+  else if(q.tipo === 'orden'){
+    body = `<p class="orden-hint">Ordénalas con las flechas ↑ ↓ (de primero a último).</p>
+      <ul class="orden-list" id="orden-${lid}-${q.id}">${renderOrdenItems(lid, q)}</ul>`;
+  }
+
+  return `
+    <div class="q-card ${answered}" id="card-${lid}-${q.id}">
+      <div class="q-head">
+        <span class="q-num">${num}</span>
+        <p class="q-text">${esc(q.texto)}</p>
+        <span class="q-answered-tick">✓</span>
+      </div>
+      ${body}
+      <div class="matiz-wrap">
+        <label for="matiz-${lid}-${q.id}">Matizar / añadir (opcional)</label>
+        <textarea class="matiz" id="matiz-${lid}-${q.id}" data-l="${lid}" data-q="${q.id}"
+          rows="1" placeholder="Escribe aquí si quieres puntualizar algo…">${esc(a.note || '')}</textarea>
+      </div>
+    </div>`;
+}
+
+function renderOrdenItems(lid, q){
+  const a = ansFor(lid, q.id);
+  const order = a.order || q.opciones.map((_, i) => i); // orden natural por defecto
+  return order.map((optIdx, pos) => `
+    <li class="orden-item" data-pos="${pos}">
+      <span class="orden-pos">${pos+1}</span>
+      <span class="orden-txt">${esc(q.opciones[optIdx])}</span>
+      <span class="orden-ctrls">
+        <button data-l="${lid}" data-q="${q.id}" data-dir="up" data-pos="${pos}"
+          ${pos===0?'disabled':''} aria-label="Subir">↑</button>
+        <button data-l="${lid}" data-q="${q.id}" data-dir="down" data-pos="${pos}"
+          ${pos===order.length-1?'disabled':''} aria-label="Bajar">↓</button>
+      </span>
+    </li>`).join('');
+}
+
+function bindPreguntas(){
+  const root = $('#preguntas');
+
+  // radios + checkboxes
+  root.querySelectorAll('input[type=radio], input[type=checkbox]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const {l, q, i} = inp.dataset;
+      const a = ansFor(l, q);
+      if(inp.type === 'radio'){
+        a.choice = parseInt(i, 10);
+      } else {
+        const idx = parseInt(i, 10);
+        a.choices = a.choices || [];
+        if(inp.checked){ if(!a.choices.includes(idx)) a.choices.push(idx); }
+        else { a.choices = a.choices.filter(x => x !== idx); }
+        a.choices.sort((x,y)=>x-y);
+      }
+      saveState();
+      markAnswered(l, q);
+      updateProgress();
+    });
+  });
+
+  // matiz
+  root.querySelectorAll('textarea.matiz').forEach(ta => {
+    autosize(ta);
+    ta.addEventListener('input', () => {
+      const {l, q} = ta.dataset;
+      ansFor(l, q).note = ta.value;
+      saveState();
+      autosize(ta);
+    });
+  });
+
+  // orden
+  root.querySelectorAll('.orden-ctrls button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const {l, q, dir, pos} = btn.dataset;
+      moveOrden(l, q, parseInt(pos,10), dir);
+    });
+  });
+}
+
+function autosize(ta){
+  ta.style.height = 'auto';
+  ta.style.height = Math.max(44, ta.scrollHeight) + 'px';
+}
+
+function moveOrden(lid, qid, pos, dir){
+  const q = currentLinea.preguntas.find(p => p.id === qid);
+  const a = ansFor(lid, qid);
+  const order = a.order ? a.order.slice() : q.opciones.map((_, i) => i);
+  const swap = dir === 'up' ? pos - 1 : pos + 1;
+  if(swap < 0 || swap >= order.length) return;
+  [order[pos], order[swap]] = [order[swap], order[pos]];
+  a.order = order;
+  saveState();
+  $('#orden-'+lid+'-'+qid).innerHTML = renderOrdenItems(lid, q);
+  // re-bind solo de esa lista
+  $('#orden-'+lid+'-'+qid).querySelectorAll('.orden-ctrls button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const d = btn.dataset;
+      moveOrden(d.l, d.q, parseInt(d.pos,10), d.dir);
+    });
+  });
+  markAnswered(lid, qid);
+  updateProgress();
+}
+
+function markAnswered(lid, qid){
+  const q = currentLinea.preguntas.find(p => p.id === qid);
+  const card = $('#card-'+lid+'-'+qid);
+  if(!card) return;
+  card.classList.toggle('answered', isAnswered(q, ansFor(lid, qid)));
+}
+
+function updateProgress(){
+  const {done, total} = lineaProgress(currentLinea);
+  const pct = total ? Math.round(done/total*100) : 0;
+  $('#progress-text').textContent = `${done} de ${total} respondidas`;
+  $('#progress-pct').textContent = pct + '%';
+  $('#progress-fill').style.width = pct + '%';
+}
+
+/* =========================================================================
+   RESUMEN
+   ========================================================================= */
+function answerLines(q, a){
+  // devuelve array de strings (líneas de la respuesta)
+  if(!isAnswered(q, a)) return null;
+  if(q.tipo === 'unica')    return [ q.opciones[a.choice] ];
+  if(q.tipo === 'multiple') return a.choices.map(i => q.opciones[i]);
+  if(q.tipo === 'orden')    return a.order.map((i, pos) => `${pos+1}. ${q.opciones[i]}`);
+  return null;
+}
+
+function renderResumen(){
+  $('#resumen-content').innerHTML = LINEAS.map((l, li) => {
+    const items = l.preguntas.map((q, qi) => {
+      const a = (state[l.id] || {})[q.id] || {};
+      const lines = answerLines(q, a);
+      let ansHtml;
+      if(!lines){
+        ansHtml = `<p class="r-a r-empty">— sin responder —</p>`;
+      } else if(q.tipo === 'unica'){
+        ansHtml = `<div class="r-a"><div class="r-line"><span class="r-bullet">→</span><span>${esc(lines[0])}</span></div></div>`;
+      } else if(q.tipo === 'orden'){
+        ansHtml = `<div class="r-a">` + lines.map(t =>
+          `<div class="r-line"><span>${esc(t)}</span></div>`).join('') + `</div>`;
+      } else {
+        ansHtml = `<div class="r-a">` + lines.map(t =>
+          `<div class="r-line"><span class="r-bullet">✓</span><span>${esc(t)}</span></div>`).join('') + `</div>`;
+      }
+      const note = a.note && a.note.trim()
+        ? `<div class="r-note">${esc(a.note.trim())}</div>` : '';
+      return `<div class="r-item">
+        <p class="r-q"><span class="r-qn">${qi+1}.</span>${esc(q.texto)}</p>
+        ${ansHtml}${note}
+      </div>`;
+    }).join('');
+    return `<div class="resumen-block">
+      <div class="blk-kicker">Línea ${li+1}</div>
+      <h2>${esc(l.nombre)}</h2>
+      ${items}
+    </div>`;
+  }).join('');
+  show('view-resumen');
+}
+
+function buildPlainText(){
+  const out = [];
+  out.push('wowinX · Cómo trabajamos nuestras líneas de negocio');
+  out.push('Resumen de respuestas');
+  LINEAS.forEach((l, li) => {
+    out.push('');
+    out.push('══════════════════════════════════');
+    out.push(`LÍNEA ${li+1} — ${l.nombre.toUpperCase()}`);
+    out.push(l.desc);
+    out.push('══════════════════════════════════');
+    l.preguntas.forEach((q, qi) => {
+      const a = (state[l.id] || {})[q.id] || {};
+      const lines = answerLines(q, a);
+      out.push('');
+      out.push(`${qi+1}. ${q.texto}`);
+      if(!lines){
+        out.push('   (sin responder)');
+      } else if(q.tipo === 'orden'){
+        lines.forEach(t => out.push('   ' + t));
+      } else {
+        lines.forEach(t => out.push('   → ' + t));
+      }
+      if(a.note && a.note.trim()){
+        out.push('   Matiz: ' + a.note.trim());
+      }
+    });
+  });
+  return out.join('\n');
+}
+
+function copyAll(){
+  const text = buildPlainText();
+  const ok = () => {
+    const fb = $('#copy-feedback');
+    fb.classList.add('show');
+    setTimeout(()=>fb.classList.remove('show'), 2000);
+    toast('Resumen copiado al portapapeles');
+  };
+  const fail = () => toast('No se pudo copiar. Selecciónalo y copia a mano.');
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(ok).catch(() => fallbackCopy(text, ok, fail));
+  } else {
+    fallbackCopy(text, ok, fail);
+  }
+}
+function fallbackCopy(text, ok, fail){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly','');
+    ta.style.position = 'fixed';
+    ta.style.top = '0'; ta.style.left = '0';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    ta.setSelectionRange(0, text.length);
+    const done = document.execCommand('copy');
+    document.body.removeChild(ta);
+    done ? ok() : fail();
+  } catch(e){ fail(); }
+}
+
+/* =========================================================================
+   NAVEGACIÓN + INIT
+   ========================================================================= */
+$('#nav-home').addEventListener('click', renderHome);
+$('#linea-back').addEventListener('click', renderHome);
+$('#resumen-back').addEventListener('click', renderHome);
+$('#nav-resumen').addEventListener('click', renderResumen);
+$('#home-resumen').addEventListener('click', renderResumen);
+$('#linea-resumen').addEventListener('click', renderResumen);
+$('#copy-all').addEventListener('click', copyAll);
+$('#reset-all').addEventListener('click', () => {
+  if(confirm('¿Borrar TODAS las respuestas y empezar de cero? Esto no se puede deshacer.')){
+    state = {};
+    saveState();
+    toast('Todo borrado');
+    renderHome();
+  }
+});
+
+renderHome();
+</script>
+</body>
+</html>
